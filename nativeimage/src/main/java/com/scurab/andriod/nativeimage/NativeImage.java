@@ -3,7 +3,9 @@ package com.scurab.andriod.nativeimage;
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.support.annotation.FloatRange;
 import android.support.annotation.IntDef;
+import android.support.annotation.IntRange;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Pair;
@@ -271,7 +273,7 @@ public class NativeImage {
             }
         }
         int result = setPixels(bitmap);
-        if (result != 0 && !passedBitmap) {
+        if (result != NO_ERR && !passedBitmap) {
             bitmap.recycle();
             bitmap = null;
         }
@@ -381,12 +383,58 @@ public class NativeImage {
         private JSONObject mParams = new JSONObject();
 
         public EffectBuilder grayScale() {
+            add(EFFECT, "grayScale");
+            return this;
+        }
+
+        public EffectBuilder crop(int offsetX, int offsetY, int width, int height) {
+            add(EFFECT, "grayScale");
+            add("offsetX", offsetX);
+            add("offsetY", offsetY);
+            add("width", width);
+            add("height", height);
+            return this;
+        }
+
+        public EffectBuilder brightness(@IntRange(from = -255, to = 255) int diff) {
+            add(EFFECT, "brightness");
+            add("brightness", diff);
+            return this;
+        }
+
+        public EffectBuilder contrast(@IntRange(from = -255, to = 255) int diff) {
+            add(EFFECT, "contrast");
+            add("contrast", diff);
+            return this;
+        }
+
+        public EffectBuilder gamma(@FloatRange(from = 0, fromInclusive = false) float diff) {
+            add(EFFECT, "gamma");
+            add("gamma", diff);
+            return this;
+        }
+
+        public EffectBuilder inverse() {
+            add(EFFECT, "inverse");
+            return this;
+        }
+
+        public EffectBuilder flipVertical() {
+            add(EFFECT, "flipv");
+            return this;
+        }
+
+        public EffectBuilder flipHorizontal() {
+            add(EFFECT, "fliph");
+            return this;
+        }
+
+        private void add(String key, Object value) {
             try {
-                mParams.put(EFFECT, "grayScale");
+                mParams.put(key, value);
             } catch (JSONException e) {
                 throw new IllegalStateException(e);
             }
-            return this;
         }
 
         public String build() {
