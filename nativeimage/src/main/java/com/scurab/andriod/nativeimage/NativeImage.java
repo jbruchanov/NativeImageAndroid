@@ -203,6 +203,18 @@ public class NativeImage {
     private native int _setPixels(Bitmap bitmap, int offsetX, int offsetY, int width, int height);
 
     /**
+     * Set pixels into bitmap with scaling.
+     * @param bitmap
+     * @return
+     */
+    public int setScaledPixels(@NonNull Bitmap bitmap) {
+        assertRGBABitmap(bitmap);
+        return _setScaledPixels(bitmap, bitmap.getWidth(), bitmap.getHeight());
+    }
+
+    private native int _setScaledPixels(Bitmap bitmap, int width, int height);
+
+    /**
      * Rotate image about 90,180,270
      * @param angle
      */
@@ -243,7 +255,13 @@ public class NativeImage {
      * @param json
      */
     public int applyEffect(String json) {
-        return _applyEffect(json);
+        long allocated = getAllocatedBytes();
+        final int result = _applyEffect(json);
+        long newAllocated = getAllocatedBytes();
+        if (allocated != newAllocated) {
+            sAllocatedMemory += (-allocated + newAllocated);
+        }
+        return result;
     }
 
     native int _applyEffect(String json);
@@ -277,6 +295,26 @@ public class NativeImage {
             bitmap.recycle();
             bitmap = null;
         }
+        return bitmap;
+    }
+
+    public Bitmap asScaledBitmap(int width, int height) {
+        return asScaledBitmap(Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888));
+    }
+
+    public Bitmap asScaledBitmap(@FloatRange(from = 0, to = 1, fromInclusive = false, toInclusive = false) float scale) {
+        final MetaData metaData = getMetaData();
+        return asScaledBitmap(Bitmap.createBitmap(Math.round(scale * metaData.width), Math.round(scale * metaData.height), Bitmap.Config.ARGB_8888));
+    }
+
+    /**
+     * Fill Bitmap, be sure width/height matches!
+     *
+     * @param bitmap null to create, not null to reuse
+     * @return
+     */
+    public Bitmap asScaledBitmap(@NonNull Bitmap bitmap) {
+        int result = setScaledPixels(bitmap);
         return bitmap;
     }
 
@@ -426,6 +464,18 @@ public class NativeImage {
 
         public EffectBuilder flipHorizontal() {
             add(EFFECT, "fliph");
+            return this;
+        }
+
+        public EffectBuilder naiveDownscale(NativeImage image, @FloatRange(from = 0, to = 1, fromInclusive = false, toInclusive = false) float scale) {
+            final MetaData metaData = image.getMetaData();
+            return naiveDownscale(Math.round(scale * metaData.width), Math.round(scale * metaData.height));
+        }
+
+        public EffectBuilder naiveDownscale(int width, int height) {
+            add(EFFECT, "naiveResize");
+            add("width", width);
+            add("height", height);
             return this;
         }
 
