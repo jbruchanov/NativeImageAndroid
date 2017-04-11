@@ -233,7 +233,8 @@ public class NativeImage {
         }
         if (angle != 0) {
             if (fast) {
-                //TODO:memory check
+                MetaData m = getMetaData();
+                checkFreeMemory("RotationOp", m.width, m.height);
             }
             _rotate(angle, fast);
         }
@@ -360,7 +361,7 @@ public class NativeImage {
         long totalDevMemory = deviceMemory.first;
         long freeMemory = deviceMemory.second;
 
-        double allocatedMemory = sAllocatedMemory / (double)totalDevMemory;
+        double allocatedMemoryCoef = sAllocatedMemory / (double)totalDevMemory;
         long memAfterAllocation = freeMemory - neededMemory;
         long minFreeMemory = (long) (LIMIT * totalDevMemory);
 
@@ -373,7 +374,7 @@ public class NativeImage {
             ratio = 0.8;
         }
 
-        if (allocatedMemory > ratio && memAfterAllocation < minFreeMemory) {
+        if (allocatedMemoryCoef > ratio && memAfterAllocation < minFreeMemory) {
             throw new OutOfMemoryError(String.format("Allocating image '%s' needs %.2f MB, getting below 10%% MB of free device memory means that OS will start killing processes!", file, neededMemory / 1024f / 1024f));
         }
     }
