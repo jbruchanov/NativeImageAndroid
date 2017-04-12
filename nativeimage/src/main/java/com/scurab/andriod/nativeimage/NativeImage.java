@@ -22,6 +22,10 @@ import java.util.HashSet;
 @SuppressWarnings({"unused", "JniMissingFunction"})
 public class NativeImage {
 
+    @IntDef(value = {0, 90, 180, 270})
+    public @interface Angle {
+    }
+
     @IntDef(value = {ColorSpace.RGB, ColorSpace.RGBA})
     public @interface ColorSpace {
         int RGB = 3;
@@ -226,7 +230,8 @@ public class NativeImage {
      * @param angle
      * @param fast (valid only for 90 or 270) true is 6 - 10x faster, allocates memory of another image size though!
      */
-    public void rotate(int angle, boolean fast) {
+    public void rotate(@Angle int angle, boolean fast) {
+        //noinspection WrongConstant
         angle = angle % 360;
         if (angle < 0 || angle % 90 != 0) {
             throw new IllegalArgumentException(String.format("Invalid angle:%s, must be non-negative number divisible by 90!", angle));
@@ -234,7 +239,7 @@ public class NativeImage {
         if (angle != 0) {
             if (fast) {
                 MetaData m = getMetaData();
-                checkFreeMemory("RotationOp", m.width, m.height);
+                checkFreeMemory(m.width, m.height, mBytesPerPixel);
             }
             _rotate(angle, fast);
         }
@@ -351,12 +356,12 @@ public class NativeImage {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        checkFreeMemory(file, opts.outWidth, opts.outHeight);
+        checkFreeMemory(opts.outWidth, opts.outHeight, mBytesPerPixel);
     }
 
     @SuppressLint("DefaultLocale")
-    private void checkFreeMemory(String file, int w, int h) {
-        long neededMemory = (long) w * h * mBytesPerPixel;
+    private static void checkFreeMemory(int w, int h, int bytesPerPixel) {
+        long neededMemory = (long) w * h * bytesPerPixel;
         final Pair<Long, Long> deviceMemory = ShellHelper.getDeviceMemory();
         long totalDevMemory = deviceMemory.first;
         long freeMemory = deviceMemory.second;
@@ -367,15 +372,15 @@ public class NativeImage {
 
         double ratio;
         if (totalDevMemory < GB) {
-            ratio = 0.5f;
+            ratio = 0.55;
         } else if (totalDevMemory < 2 * GB) {
             ratio = 0.7;
         } else {
-            ratio = 0.8;
+            ratio = 0.85;
         }
 
         if (allocatedMemoryCoef > ratio && memAfterAllocation < minFreeMemory) {
-            throw new OutOfMemoryError(String.format("Allocating image '%s' needs %.2f MB, getting below 10%% MB of free device memory means that OS will start killing processes!", file, neededMemory / 1024f / 1024f));
+            throw new OutOfMemoryError(String.format("Allocating needs %.2f MB, getting below 10%% of free device memory means that OS will start killing processes!", neededMemory / 1024f / 1024f));
         }
     }
 
