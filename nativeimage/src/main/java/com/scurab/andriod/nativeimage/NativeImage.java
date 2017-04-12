@@ -18,8 +18,7 @@ import java.util.HashSet;
 /**
  * Created by JBruchanov on 03/04/2017.
  */
-
-@SuppressWarnings({"unused", "JniMissingFunction"})
+@SuppressWarnings({"unused", "JniMissingFunction", "WeakerAccess"})
 public class NativeImage {
 
     @IntDef(value = {0, 90, 180, 270})
@@ -45,9 +44,9 @@ public class NativeImage {
     public static final int ERR_EFFECT_NOT_DEFINED = -800;
     public static final int ERR_UNKNOWN = -999;
 
-    static final String IMAGE_WIDTH = "imageWidth";
-    static final String IMAGE_HEIGHT = "imageHeight";
-    private static final float LIMIT = 0.85f;//10%, don't allocate if we hit this limit
+    private static final String IMAGE_WIDTH = "imageWidth";
+    private static final String IMAGE_HEIGHT = "imageHeight";
+    private static final float LIMIT = 0.85f;//15%, don't allocate if we hit this limit
     private static final long GB = 1024L * 1024 * 1024;
 
     public enum Format {
@@ -112,7 +111,7 @@ public class NativeImage {
      */
     public int loadImage(@NonNull String path, @NonNull Format format) throws OutOfMemoryError {
         checkFreMemory(path);
-        int result = _loadImage(path, format.processor);
+        int result = throwExceptionIfError(_loadImage(path, format.processor));
         sAllocatedMemory += getAllocatedBytes();
         return result;
     }
@@ -126,7 +125,7 @@ public class NativeImage {
      * @return
      */
     public int saveImage(@NonNull String path, @NonNull Format format) {
-        return _saveImage(path, format.processor, null);
+        return throwExceptionIfError(_saveImage(path, format.processor, null));
     }
 
     /**
@@ -137,7 +136,7 @@ public class NativeImage {
      * @return
      */
     public int saveImage(@NonNull String path, @NonNull Format format, @Nullable String params) {
-        return _saveImage(path, format.processor, params);
+        return throwExceptionIfError(_saveImage(path, format.processor, params));
     }
 
     private native int _saveImage(String path, int processor, String params);
@@ -181,7 +180,7 @@ public class NativeImage {
     public int setPixels(@NonNull Bitmap outBitmap) {
         assertRGBABitmap(outBitmap);
         final MetaData metaData = getMetaData();
-        return _setPixels(outBitmap, 0, 0, metaData.width, metaData.height);
+        return throwExceptionIfError(_setPixels(outBitmap, 0, 0, metaData.width, metaData.height));
     }
 
     /**
@@ -195,7 +194,7 @@ public class NativeImage {
      */
     public int setPixels(Bitmap outBitmap, int offsetX, int offsetY, int width, int height) {
         assertRGBABitmap(outBitmap);
-        return _setPixels(outBitmap, offsetX, offsetY, width, height);
+        return throwExceptionIfError(_setPixels(outBitmap, offsetX, offsetY, width, height));
     }
 
     private void assertRGBABitmap(Bitmap bitmap) {
@@ -213,7 +212,7 @@ public class NativeImage {
      */
     public int setScaledPixels(@NonNull Bitmap bitmap) {
         assertRGBABitmap(bitmap);
-        return _setScaledPixels(bitmap, bitmap.getWidth(), bitmap.getHeight());
+        return throwExceptionIfError(_setScaledPixels(bitmap, bitmap.getWidth(), bitmap.getHeight()));
     }
 
     private native int _setScaledPixels(Bitmap bitmap, int width, int height);
@@ -230,7 +229,7 @@ public class NativeImage {
      * @param angle
      * @param fast (valid only for 90 or 270) true is 6 - 10x faster, allocates memory of another image size though!
      */
-    public void rotate(@Angle int angle, boolean fast) {
+    public int rotate(@Angle int angle, boolean fast) {
         //noinspection WrongConstant
         angle = angle % 360;
         if (angle < 0 || angle % 90 != 0) {
@@ -241,11 +240,12 @@ public class NativeImage {
                 MetaData m = getMetaData();
                 checkFreeMemory(m.width, m.height, mBytesPerPixel);
             }
-            _rotate(angle, fast);
+            return throwExceptionIfError(_rotate(angle, fast));
         }
+        return NO_ERR;
     }
 
-    private native void _rotate(int angle, boolean fast);
+    private native int _rotate(int angle, boolean fast);
 
     void onSetNativeRef(long ref) {
         mNativeRef = ref;
@@ -262,7 +262,7 @@ public class NativeImage {
      */
     public int applyEffect(String json) {
         long allocated = getAllocatedBytes();
-        final int result = _applyEffect(json);
+        final int result = throwExceptionIfError(_applyEffect(json));
         long newAllocated = getAllocatedBytes();
         if (allocated != newAllocated) {
             sAllocatedMemory += (-allocated + newAllocated);
@@ -285,7 +285,7 @@ public class NativeImage {
      * @param bitmap null to create, not null to reuse
      * @return
      */
-    public Bitmap asBitmap(Bitmap bitmap) {
+    public Bitmap asBitmap(@Nullable Bitmap bitmap) {
         boolean passedBitmap = bitmap != null;
         boolean createBitmap = bitmap == null;
         final MetaData metaData = getMetaData();
@@ -304,10 +304,20 @@ public class NativeImage {
         return bitmap;
     }
 
+    /**
+     * Get Image as scaled bitmap, width and height must not be higher than acutal value
+     * @param width
+     * @param height
+     * @return
+     */
     public Bitmap asScaledBitmap(int width, int height) {
         return asScaledBitmap(Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888));
     }
 
+    /**
+     * Get Image as scaled bitmap with specific scale
+     * @return
+     */
     public Bitmap asScaledBitmap(@FloatRange(from = 0, to = 1, fromInclusive = false, toInclusive = false) float scale) {
         final MetaData metaData = getMetaData();
         return asScaledBitmap(Bitmap.createBitmap(Math.round(scale * metaData.width), Math.round(scale * metaData.height), Bitmap.Config.ARGB_8888));
@@ -348,7 +358,7 @@ public class NativeImage {
         throw new IllegalArgumentException(String.format("Unable to detect format based on file:'%s'", path));
     }
 
-    private void checkFreMemory(String file) {
+    private void checkFreMemory(@NonNull String file) {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         try {
             opts.inJustDecodeBounds = true;
@@ -357,6 +367,35 @@ public class NativeImage {
             throw new IllegalStateException(e);
         }
         checkFreeMemory(opts.outWidth, opts.outHeight, mBytesPerPixel);
+    }
+
+    private int throwExceptionIfError(int resultCode) {
+        switch (resultCode){
+            case NO_ERR:
+                return resultCode;
+            case CANT_OPEN_FILE:
+                throw new IllegalStateException("Unable to open file");
+            case OUT_OF_MEMORY:
+                throw new OutOfMemoryError();
+            case NO_DATA:
+                throw new IllegalStateException("No data to process?!");
+            case NOT_SAME_RESOLUTION:
+            case INVALID_RESOLUTION:
+                throw new IllegalStateException("Invalid resolution");
+            case INVALID_BITMAP_FORMAT:
+                throw new IllegalStateException("Invalid bitmap format, check Config.ARGB");
+            case INVALID_JSON:
+                throw new IllegalStateException("Invalid json");
+            case INVALID_PNG:
+                throw new IllegalStateException("Invalid PNG");
+            case NOT_SUPPORTED_PNG_CONFIGURATION:
+                throw new UnsupportedOperationException("PNG with unsupported configuration");
+            case ERR_EFFECT_NOT_DEFINED:
+                throw new IllegalArgumentException("Effect not found");
+            case ERR_UNKNOWN:
+            default:
+                throw new IllegalStateException(String.format("Specific inner/unknown exception errorCode:%s", resultCode));
+        }
     }
 
     @SuppressLint("DefaultLocale")
@@ -409,11 +448,7 @@ public class NativeImage {
         private JSONObject mParams = new JSONObject();
 
         public SaveParamsBuilder setJpegQuality(int quality) {
-            try {
-                mParams.put("jpegQuality", quality);
-            } catch (JSONException e) {
-                throw new IllegalStateException(e);
-            }
+            add(mParams, "jpegQuality", quality);
             return this;
         }
 
@@ -427,74 +462,73 @@ public class NativeImage {
         private JSONObject mParams = new JSONObject();
 
         public EffectBuilder grayScale() {
-            add(EFFECT, "grayScale");
+            add(mParams, EFFECT, "grayScale");
             return this;
         }
 
         public EffectBuilder crop(int offsetX, int offsetY, int width, int height) {
-            add(EFFECT, "grayScale");
-            add("offsetX", offsetX);
-            add("offsetY", offsetY);
-            add("width", width);
-            add("height", height);
+            add(mParams, EFFECT, "grayScale");
+            add(mParams, "offsetX", offsetX);
+            add(mParams, "offsetY", offsetY);
+            add(mParams, "width", width);
+            add(mParams, "height", height);
             return this;
         }
 
         public EffectBuilder brightness(@IntRange(from = -255, to = 255) int diff) {
-            add(EFFECT, "brightness");
-            add("brightness", diff);
+            add(mParams, EFFECT, "brightness");
+            add(mParams, "brightness", diff);
             return this;
         }
 
         public EffectBuilder contrast(@IntRange(from = -255, to = 255) int diff) {
-            add(EFFECT, "contrast");
-            add("contrast", diff);
+            add(mParams, EFFECT, "contrast");
+            add(mParams, "contrast", diff);
             return this;
         }
 
         public EffectBuilder gamma(@FloatRange(from = 0, fromInclusive = false) float diff) {
-            add(EFFECT, "gamma");
-            add("gamma", diff);
+            add(mParams, EFFECT, "gamma");
+            add(mParams, "gamma", diff);
             return this;
         }
 
         public EffectBuilder inverse() {
-            add(EFFECT, "inverse");
+            add(mParams, EFFECT, "inverse");
             return this;
         }
 
         public EffectBuilder flipVertical() {
-            add(EFFECT, "flipv");
+            add(mParams, EFFECT, "flipv");
             return this;
         }
 
         public EffectBuilder flipHorizontal() {
-            add(EFFECT, "fliph");
+            add(mParams, EFFECT, "fliph");
             return this;
         }
 
-        public EffectBuilder naiveDownscale(NativeImage image, @FloatRange(from = 0, to = 1, fromInclusive = false, toInclusive = false) float scale) {
-            final MetaData metaData = image.getMetaData();
+        public EffectBuilder naiveDownscale(MetaData metaData, @FloatRange(from = 0, to = 1, fromInclusive = false, toInclusive = false) float scale) {
             return naiveDownscale(Math.round(scale * metaData.width), Math.round(scale * metaData.height));
         }
 
         public EffectBuilder naiveDownscale(int width, int height) {
-            add(EFFECT, "naiveResize");
-            add("width", width);
-            add("height", height);
+            add(mParams, EFFECT, "naiveResize");
+            add(mParams, "width", width);
+            add(mParams, "height", height);
             return this;
-        }
-
-        private void add(String key, Object value) {
-            try {
-                mParams.put(key, value);
-            } catch (JSONException e) {
-                throw new IllegalStateException(e);
-            }
         }
 
         public String build() {
             return mParams.toString();
+        }
+    }
+
+    private static void add(@NonNull JSONObject obj, @NonNull String key, Object value) {
+        try {
+            obj.put(key, value);
+        } catch (JSONException e) {
+            throw new IllegalStateException(e);
         }
     }
 }
