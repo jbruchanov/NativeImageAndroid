@@ -312,6 +312,16 @@ public class NativeImage {
      * @return
      */
     public Bitmap asScaledBitmap(int width, int height) {
+        if (width <= 0 && height <= 0) {
+            throw new IllegalArgumentException(String.format("Invalid size provided width:%s height:%s, at least 1 value must be positive", width, height));
+        }
+        final MetaData metaData = getMetaData();
+        if (width == 0) {
+            width = (int) (height * (metaData.width / (float) metaData.height));
+        }
+        if (height == 0) {
+            height = (int) (width * (metaData.height / (float) metaData.width));
+        }
         return asScaledBitmap(Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888));
     }
 
