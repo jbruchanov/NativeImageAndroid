@@ -3,4 +3,6 @@
     <string name="effect">Effect</string>
     <string name="reload">Reload</string>
     <string name="apply">Apply</string>
+    <string name="offset_x">Offset X</string>
+    <string name="offset_y">Offset Y</string>
 </resources>

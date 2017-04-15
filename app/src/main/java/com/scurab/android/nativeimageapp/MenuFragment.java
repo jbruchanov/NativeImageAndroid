@@ -16,7 +16,8 @@ import android.widget.Button;
 public class MenuFragment extends Fragment {
 
     private final static Class[] FRAGMENTS = new Class<?>[]{
-            EffectsFragment.class
+            EffectsFragment.class,
+            LargeImageFragment.class
     };
 
     private LinearLayoutCompat mRoot;
