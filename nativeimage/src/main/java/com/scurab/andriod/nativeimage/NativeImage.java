@@ -111,6 +111,7 @@ public class NativeImage {
      */
     public int loadImage(@NonNull String path, @NonNull Format format) throws OutOfMemoryError {
         checkFreMemory(path);
+        sAllocatedMemory -= getAllocatedBytes();
         int result = throwExceptionIfError(_loadImage(path, format.processor));
         sAllocatedMemory += getAllocatedBytes();
         return result;
@@ -270,7 +271,7 @@ public class NativeImage {
         return result;
     }
 
-    native int _applyEffect(String json);
+    private native int _applyEffect(String json);
 
     /**
      * Convert to bitmap (bitmap is acreated)
