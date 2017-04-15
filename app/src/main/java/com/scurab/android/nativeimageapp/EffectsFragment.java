@@ -6,15 +6,13 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.os.AsyncTaskCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.scurab.andriod.nativeimage.NativeImage;
 
@@ -40,6 +38,8 @@ public class EffectsFragment extends Fragment {
     NativeImage mImage;
     ImageView mImageView;
     private Spinner mSpinner;
+    private ProgressDialog mDialog;
+    private Bitmap mBitmap;
 
     @Nullable
     @Override
@@ -70,10 +70,23 @@ public class EffectsFragment extends Fragment {
         view.findViewById(R.id.reload).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mImage.loadImage(getImagePath(MainActivity.IMAGE_1));
-                mImageView.setImageBitmap(mImage.asBitmap());
+                try {
+                    mImage.loadImage(getImagePath(MainActivity.IMAGE_1));
+                    releaseBitmap();
+                    mBitmap = mImage.asScaledBitmap(getResources().getDisplayMetrics().widthPixels, 0);
+                    mImageView.setImageBitmap(mBitmap);
+                } catch (OutOfMemoryError outOfMemoryError) {
+                    Toast.makeText(getContext(), outOfMemoryError.getMessage(), Toast.LENGTH_LONG).show();
+                }
             }
         });
+    }
+
+    private void releaseBitmap() {
+        if (mBitmap != null) {
+            mBitmap.recycle();
+            mBitmap = null;
+        }
     }
 
     private void onApplySelected(String effect) {
@@ -115,19 +128,27 @@ public class EffectsFragment extends Fragment {
                 }
                 break;
         }
-        final ProgressDialog dialog = ProgressDialog.show(getContext(), effect, null, true, false);
+        mDialog = ProgressDialog.show(getContext(), effect, null, true, false);
+        releaseBitmap();
         //noinspection unchecked
         new AsyncTask<Object, Void, Bitmap>() {
             @Override
             protected Bitmap doInBackground(Object[] params) {
-                mImage.applyEffect(effectBuilder.build());
-                return mImage.asBitmap();
+                try {
+                    mImage.applyEffect(effectBuilder.build());
+                    return mImage.asScaledBitmap(getResources().getDisplayMetrics().widthPixels, 0);
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                    return null;
+                }
             }
 
             @Override
             protected void onPostExecute(Bitmap o) {
                 try {
-                    dialog.dismiss();
+                    mBitmap = o;
+                    mDialog.dismiss();
+                    mDialog = null;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -136,6 +157,15 @@ public class EffectsFragment extends Fragment {
                 }
             }
         }.execute();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (mDialog != null) {
+            mDialog.dismiss();
+            mDialog = null;
+        }
     }
 
     @Override
