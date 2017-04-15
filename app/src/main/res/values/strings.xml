@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">NativeImageApp</string>
+    <string name="effect">Effect</string>
+    <string name="reload">Reload</string>
+    <string name="apply">Apply</string>
 </resources>
