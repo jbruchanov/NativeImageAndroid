@@ -420,6 +420,7 @@ public class NativeImage {
         long memAfterAllocation = freeMemory - neededMemory;
         long minFreeMemory = (long) (LIMIT * totalDevMemory);
 
+        double neededMemoryCoef = neededMemory / (double)totalDevMemory;
         double ratio;
         if (totalDevMemory < GB) {
             ratio = 0.55;
@@ -429,7 +430,7 @@ public class NativeImage {
             ratio = 0.85;
         }
 
-        if (allocatedMemoryCoef > ratio && memAfterAllocation < minFreeMemory) {
+        if ((neededMemoryCoef > 0.5 || allocatedMemoryCoef > ratio) && memAfterAllocation < minFreeMemory) {
             throw new OutOfMemoryError(String.format("Allocating needs %.2f MB, getting below 10%% of free device memory means that OS will start killing processes!", neededMemory / 1024f / 1024f));
         }
     }
