@@ -467,7 +467,7 @@ public class NativeImage {
         }
 
         public EffectBuilder crop(int offsetX, int offsetY, int width, int height) {
-            add(mParams, EFFECT, "grayScale");
+            add(mParams, EFFECT, "crop");
             add(mParams, "offsetX", offsetX);
             add(mParams, "offsetY", offsetY);
             add(mParams, "width", width);
