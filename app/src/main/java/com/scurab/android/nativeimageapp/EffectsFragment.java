@@ -136,7 +136,7 @@ public class EffectsFragment extends Fragment {
             protected Bitmap doInBackground(Object[] params) {
                 try {
                     mImage.applyEffect(effectBuilder.build());
-                    return mImage.asScaledBitmap(getResources().getDisplayMetrics().widthPixels, 0);
+                    return mImage.asScaledBitmap(Math.min(mImage.getMetaData().width, getResources().getDisplayMetrics().widthPixels), 0);
                 } catch (Throwable e) {
                     e.printStackTrace();
                     return null;
