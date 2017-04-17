@@ -36,7 +36,7 @@ public class LargeImageFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        mImageFile = getResources().getDisplayMetrics().widthPixels < 800 ? MainActivity.LARGE_IMAGE_100MPIX : mImageFile;
+        mImageFile = getResources().getDisplayMetrics().widthPixels < 800 ? MainActivity.LARGE_IMAGE_100MPIX : MainActivity.LARGE_IMAGE_200MPIX;
         return inflater.inflate(R.layout.fragment_large_image, container, false);
     }
 
