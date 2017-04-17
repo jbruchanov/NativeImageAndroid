@@ -46,8 +46,8 @@ public class NativeImage {
 
     private static final String IMAGE_WIDTH = "imageWidth";
     private static final String IMAGE_HEIGHT = "imageHeight";
-    private static final float LIMIT = 0.85f;//15%, don't allocate if we hit this limit
-    private static final long GB = 1024L * 1024 * 1024;
+    private static final long GiB = 1024L * 1024 * 1024;
+    private static final float MiB = 1024f * 1024f;
 
     public enum Format {
         JPEG_RGB(1), PNG_RGB(2), PNG_RGBA(3);
@@ -212,11 +212,25 @@ public class NativeImage {
      * @return
      */
     public int setScaledPixels(@NonNull Bitmap bitmap) {
-        assertRGBABitmap(bitmap);
-        return throwExceptionIfError(_setScaledPixels(bitmap, bitmap.getWidth(), bitmap.getHeight()));
+        MetaData metaData = getMetaData();
+        return setScaledPixels(bitmap, 0, 0, metaData.width, metaData.height);
     }
 
-    private native int _setScaledPixels(Bitmap bitmap, int width, int height);
+    /**
+     *
+     * @param bitmap
+     * @param offsetX
+     * @param offsetY
+     * @param width
+     * @param height
+     * @return
+     */
+    public int setScaledPixels(@NonNull Bitmap bitmap, int offsetX, int offsetY, int width, int height) {
+        assertRGBABitmap(bitmap);
+        return throwExceptionIfError(_setScaledPixels(bitmap, offsetX, offsetY, width, height));
+    }
+
+    private native int _setScaledPixels(Bitmap bitmap, int offsetX, int offsetY, int width, int height);
 
     /**
      * Rotate image about 90,180,270
@@ -329,7 +343,7 @@ public class NativeImage {
      * Get Image as scaled bitmap with specific scale
      * @return
      */
-    public Bitmap asScaledBitmap(@FloatRange(from = 0, to = 1, fromInclusive = false, toInclusive = false) float scale) {
+    public Bitmap asScaledBitmap(@FloatRange(from = 0, to = 1, fromInclusive = false) float scale) {
         final MetaData metaData = getMetaData();
         return asScaledBitmap(Bitmap.createBitmap(Math.round(scale * metaData.width), Math.round(scale * metaData.height), Bitmap.Config.ARGB_8888));
     }
