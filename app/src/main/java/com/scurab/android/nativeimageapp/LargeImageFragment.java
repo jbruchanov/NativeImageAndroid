@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.scurab.andriod.nativeimage.NativeImage;
 
@@ -29,7 +30,8 @@ public class LargeImageFragment extends Fragment {
     private ProgressDialog mDialog;
     private SeekBar mOffsetX;
     private SeekBar mOffsetY;
-    private ImageView mPreview;
+    private SeekBar mScale;
+    private PreviewImageView mPreview;
     
     private String mImageFile;
 
@@ -44,10 +46,11 @@ public class LargeImageFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mImageView = (ImageView) view.findViewById(R.id.image);
-        mPreview = (ImageView) view.findViewById(R.id.preview);
+        mPreview = (PreviewImageView) view.findViewById(R.id.preview);
         mLabel = (TextView) view.findViewById(R.id.label);
         mOffsetX = (SeekBar) view.findViewById(R.id.offsetX);
         mOffsetY = (SeekBar) view.findViewById(R.id.offsetY);
+        mScale = (SeekBar) view.findViewById(R.id.scale);
         final SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -66,6 +69,7 @@ public class LargeImageFragment extends Fragment {
         };
         mOffsetX.setOnSeekBarChangeListener(listener);
         mOffsetY.setOnSeekBarChangeListener(listener);
+        mScale.setOnSeekBarChangeListener(listener);
     }
 
     private void onUpdatePreview() {
@@ -73,8 +77,18 @@ public class LargeImageFragment extends Fragment {
             final NativeImage.MetaData metaData = mImage.getMetaData();
             int offsetX = (int) ((metaData.width - mBitmap.getWidth()) / 100f * mOffsetX.getProgress());
             int offsetY = (int) ((metaData.height - mBitmap.getHeight()) / 100f * mOffsetY.getProgress());
-            mImage.setPixels(mBitmap, offsetX, offsetY, mBitmap.getWidth(), mBitmap.getHeight());
+            float scale = 0.25f + (mScale.getProgress() * 2.75f / 100f);
+            final int scaledWidth = (int) (mBitmap.getWidth() * scale);
+            final int scaledHeight = (int) (mBitmap.getHeight() * scale);
+            if (offsetX + scaledWidth > metaData.width) {
+                offsetX = metaData.width - scaledWidth;
+            }
+            if (offsetY + scaledHeight > metaData.height) {
+                offsetY = metaData.height - scaledHeight;
+            }
+            mImage.setScaledPixels(mBitmap, offsetX, offsetY, scaledWidth, scaledHeight);
             Log.d("Preview", String.format("Offset x:%s y:%s", offsetX, offsetY));
+            mPreview.setData(metaData.width, metaData.height, offsetX, offsetY, mBitmap.getWidth(), mBitmap.getHeight(), scale);
         }
     }
 
@@ -109,17 +123,29 @@ public class LargeImageFragment extends Fragment {
             final String path = getImagePath(mImageFile);
             new AsyncTask<Void, Void, Bitmap>() {
 
+                public Throwable mError;
+
                 @Override
                 protected Bitmap doInBackground(Void... params) {
-                    mImage.loadImage(path);
-                    final NativeImage.MetaData metaData = mImage.getMetaData();
-                    mBitmap = Bitmap.createBitmap(metaData.width / 10, metaData.height / 10, Bitmap.Config.ARGB_8888);
-                    mImage.setPixels(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight());
+                    try {
+                        mImage.loadImage(path);
+                        final NativeImage.MetaData metaData = mImage.getMetaData();
+                        mBitmap = Bitmap.createBitmap((int) (metaData.width / 10f), (int) (metaData.height / 10f), Bitmap.Config.ARGB_8888);
+                        mImage.setPixels(mBitmap, 0, 0, mBitmap.getWidth(), mBitmap.getHeight());
+                    } catch (Throwable t) {
+                        mError = t;
+                    }
                     return mBitmap;
                 }
 
                 @Override
                 protected void onPostExecute(Bitmap bitmap) {
+                    if (mError != null) {
+                        if (getActivity() != null) {
+                            Toast.makeText(getActivity(), mError.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                        return;
+                    }
                     mImageView.setImageBitmap(bitmap);
                     mPreview.setImageBitmap(mImage.asScaledBitmap(getResources().getDisplayMetrics().widthPixels / 2, 0));
                     final NativeImage.MetaData metaData = mImage.getMetaData();
@@ -129,6 +155,7 @@ public class LargeImageFragment extends Fragment {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
+                    onUpdatePreview();
                 }
             }.execute();
         }
