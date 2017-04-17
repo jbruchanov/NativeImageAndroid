@@ -415,23 +415,16 @@ public class NativeImage {
         final Pair<Long, Long> deviceMemory = ShellHelper.getDeviceMemory();
         long totalDevMemory = deviceMemory.first;
         long freeMemory = deviceMemory.second;
-
-        double allocatedMemoryCoef = sAllocatedMemory / (double)totalDevMemory;
-        long memAfterAllocation = freeMemory - neededMemory;
-        long minFreeMemory = (long) (LIMIT * totalDevMemory);
-
-        double neededMemoryCoef = neededMemory / (double)totalDevMemory;
+        double willBeUsedMemoryCoef = (neededMemory + sAllocatedMemory) / (double) totalDevMemory;
         double ratio;
-        if (totalDevMemory < GB) {
-            ratio = 0.55;
-        } else if (totalDevMemory < 2 * GB) {
+        if (totalDevMemory < 2 * GiB) {
             ratio = 0.7;
         } else {
             ratio = 0.85;
         }
 
-        if ((neededMemoryCoef > 0.5 || allocatedMemoryCoef > ratio) && memAfterAllocation < minFreeMemory) {
-            throw new OutOfMemoryError(String.format("Allocating needs %.2f MB, getting below 10%% of free device memory means that OS will start killing processes!", neededMemory / 1024f / 1024f));
+        if (willBeUsedMemoryCoef > ratio) {
+            throw new OutOfMemoryError(String.format("Allocating needs %.2f MB, device has:%.2f MB, getting close to total device memory means that OS will most likely kill our process!", neededMemory / MiB, totalDevMemory / MiB));
         }
     }
 
