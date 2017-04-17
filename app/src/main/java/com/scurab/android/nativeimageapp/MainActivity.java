@@ -2,6 +2,7 @@ package com.scurab.android.nativeimageapp;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
@@ -26,13 +27,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        openFragment(MenuFragment.class);
         try {
             copyAssets();
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
-        openFragment(MenuFragment.class);
+        openFragment(MenuFragment.class, false);
     }
 
     private void copyAssets() throws IOException {
@@ -46,34 +46,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    private void loadImages() {
-//        for (Map.Entry<String, String> entry : mMap.entrySet()) {
-//            ImageView iv = new ImageView(this);
-//            mRoot.addView(iv);
-//            NativeImage ni = new NativeImage(NativeImage.ColorSpace.RGB);
-//            int result = ni.loadImage(entry.getValue());
-//            ni.applyEffect(new NativeImage.EffectBuilder().grayScale().build());
-//            if (NativeImage.NO_ERR == result) {
-//                iv.setImageBitmap(ni.asBitmap());
-//            }
-//            mImages.add(ni);
-//        }
-//    }
-//
-//    private void releaseImages() {
-//        for (NativeImage image : mImages) {
-//            image.dispose();
-//        }
-//        mImages.clear();
-//    }
-
     public void openFragment(Class<? extends Fragment> tag) {
+        openFragment(tag, true);
+    }
+
+    public void openFragment(Class<? extends Fragment> tag, boolean addToBackStack) {
         try {
-            getSupportFragmentManager()
+            final FragmentTransaction t = getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.fragment_container, tag.newInstance(), tag.getName())
-                    .addToBackStack(null)
-                    .commit();
+                    .replace(R.id.fragment_container, tag.newInstance(), tag.getName());
+            if (addToBackStack) {
+                t.addToBackStack(null);
+            }
+            t.commit();
         } catch (Throwable e) {
             showToast(e.getMessage());
             e.printStackTrace();
