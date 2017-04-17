@@ -50,36 +50,41 @@ public class EffectsFragment extends Fragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mImage = new NativeImage();
-        mImageView = (ImageView) view.findViewById(R.id.image);
-        mSpinner = (Spinner)view.findViewById(R.id.selector);
-        mImage.loadImage(getImagePath(MainActivity.IMAGE_1));
-        mImageView.setImageBitmap(mImage.asBitmap());
+        try {
+            mImage = new NativeImage();
+            mImageView = (ImageView) view.findViewById(R.id.image);
+            mSpinner = (Spinner)view.findViewById(R.id.selector);
+            mImage.loadImage(getImagePath(MainActivity.IMAGE_1));
+            mImageView.setImageBitmap(mBitmap = mImage.asScaledBitmap(1f));
 
-        final ArrayAdapter<String> adapter = new ArrayAdapter<>(view.getContext(), android.R.layout.simple_spinner_item, EFFECTS);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        mSpinner.setAdapter(adapter);
+            final ArrayAdapter<String> adapter = new ArrayAdapter<>(view.getContext(), android.R.layout.simple_spinner_item, EFFECTS);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            mSpinner.setAdapter(adapter);
 
-        view.findViewById(R.id.apply_effect).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onApplySelected(EFFECTS[mSpinner.getSelectedItemPosition()]);
-            }
-        });
-
-        view.findViewById(R.id.reload).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                try {
-                    mImage.loadImage(getImagePath(MainActivity.IMAGE_1));
-                    releaseBitmap();
-                    mBitmap = mImage.asScaledBitmap(getResources().getDisplayMetrics().widthPixels, 0);
-                    mImageView.setImageBitmap(mBitmap);
-                } catch (OutOfMemoryError outOfMemoryError) {
-                    Toast.makeText(getContext(), outOfMemoryError.getMessage(), Toast.LENGTH_LONG).show();
+            view.findViewById(R.id.apply_effect).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    onApplySelected(EFFECTS[mSpinner.getSelectedItemPosition()]);
                 }
-            }
-        });
+            });
+
+            view.findViewById(R.id.reload).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    try {
+                        mImage.loadImage(getImagePath(MainActivity.IMAGE_1));
+                        releaseBitmap();
+                        mBitmap = mImage.asScaledBitmap(getResources().getDisplayMetrics().widthPixels, 0);
+                        mImageView.setImageBitmap(mBitmap);
+                    } catch (OutOfMemoryError outOfMemoryError) {
+                        Toast.makeText(getContext(), outOfMemoryError.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+        } catch (Throwable e) {
+            e.printStackTrace();
+            Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void releaseBitmap() {
