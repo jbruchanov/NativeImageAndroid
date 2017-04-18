@@ -6,6 +6,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,6 +23,9 @@ import com.scurab.andriod.nativeimage.NativeImage;
 
 public class EffectsFragment extends Fragment {
 
+    public static final String ROTATE90SAVEMEMORY = "rotate90savememory";
+    public static final String ROTATE90FAST = "rotate90fast";
+    private static final String ROTATE180 = "rotate180";
     private final static String[] EFFECTS = new String[]{
             "--",
             "grayScale",
@@ -32,7 +36,10 @@ public class EffectsFragment extends Fragment {
             "inverse",
             "flipv",
             "fliph",
-            "naiveResize"
+            "naiveResize",
+            ROTATE90SAVEMEMORY,
+            ROTATE90FAST,
+            ROTATE180,
     };
 
     NativeImage mImage;
@@ -94,10 +101,15 @@ public class EffectsFragment extends Fragment {
         }
     }
 
-    private void onApplySelected(String effect) {
+    private void onApplySelected(final String effect) {
         final NativeImage.EffectBuilder effectBuilder = new NativeImage.EffectBuilder();
         final NativeImage.MetaData metaData = mImage.getMetaData();
         switch (effect) {
+            case ROTATE90FAST:
+            case ROTATE90SAVEMEMORY:
+            case ROTATE180:
+                //continue, no builder
+                break;
             default:
             case "--":
                 return;
@@ -137,19 +149,35 @@ public class EffectsFragment extends Fragment {
         releaseBitmap();
         //noinspection unchecked
         new AsyncTask<Object, Void, Bitmap>() {
+            public Throwable mErr;
+
             @Override
             protected Bitmap doInBackground(Object[] params) {
                 try {
-                    mImage.applyEffect(effectBuilder.build());
+                    if (ROTATE90FAST.equals(effect)) {
+                        mImage.rotate(90, true);
+                    } else if (ROTATE90SAVEMEMORY.equals(effect)) {
+                        mImage.rotate(90);
+                    } else if (ROTATE180.equals(effect)) {
+                        mImage.rotate(180);
+                    } else {
+                        mImage.applyEffect(effectBuilder.build());
+                    }
                     return mImage.asScaledBitmap(Math.min(mImage.getMetaData().width, getResources().getDisplayMetrics().widthPixels), 0);
                 } catch (Throwable e) {
-                    e.printStackTrace();
+                    mErr = e;
                     return null;
                 }
             }
 
             @Override
             protected void onPostExecute(Bitmap o) {
+                if (mErr != null) {
+                    final FragmentActivity activity = getActivity();
+                    if (activity != null) {
+                        Toast.makeText(activity, mErr.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
                 try {
                     mBitmap = o;
                     mDialog.dismiss();
