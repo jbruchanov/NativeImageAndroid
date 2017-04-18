@@ -34,6 +34,8 @@ public class Image100MPixFragment extends Fragment {
     private PreviewImageView mPreview;
     
     private String mImageFile;
+    private AsyncTask<Void, Void, Bitmap> mTask;
+
 
     @Nullable
     @Override
@@ -115,8 +117,13 @@ public class Image100MPixFragment extends Fragment {
             mImageView.setImageBitmap(null);
         }
         if (mImage != null) {
-            mImage.dispose();
-            mImage = null;
+            if (mTask != null) {
+                mTask.cancel(false);
+            } else {
+                mImage.dispose();
+                mImage = null;
+            }
+            mTask = null;
         }
     }
 
@@ -125,7 +132,7 @@ public class Image100MPixFragment extends Fragment {
             mImage = new NativeImage();
             mDialog = ProgressDialog.show(getActivity(), "Loading", null, true, false);
             final String path = getImagePath(mImageFile);
-            new AsyncTask<Void, Void, Bitmap>() {
+            mTask = new AsyncTask<Void, Void, Bitmap>() {
 
                 public Throwable mError;
 
@@ -143,7 +150,18 @@ public class Image100MPixFragment extends Fragment {
                 }
 
                 @Override
+                protected void onCancelled() {
+                    if (mBitmap != null) {
+                        mBitmap.recycle();
+                        mBitmap = null;
+                    }
+                    mImage.dispose();
+                    mImage = null;
+                }
+
+                @Override
                 protected void onPostExecute(Bitmap bitmap) {
+                    mTask = null;
                     if (mError != null) {
                         if (getActivity() != null) {
                             Toast.makeText(getActivity(), mError.getMessage(), Toast.LENGTH_LONG).show();
@@ -161,7 +179,8 @@ public class Image100MPixFragment extends Fragment {
                     }
                     onUpdatePreview();
                 }
-            }.execute();
+            };
+            mTask.execute();
         }
     }
 
