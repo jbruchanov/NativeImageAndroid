@@ -48,6 +48,7 @@ public class NativeImage {
     private static final String IMAGE_HEIGHT = "imageHeight";
     private static final long GiB = 1024L * 1024 * 1024;
     private static final float MiB = 1024f * 1024f;
+    private static Double sDeviceMemory;
 
     public enum Format {
         JPEG_RGB(1), PNG_RGB(2), PNG_RGBA(3);
@@ -426,19 +427,25 @@ public class NativeImage {
     @SuppressLint("DefaultLocale")
     private static void checkFreeMemory(int w, int h, int bytesPerPixel) {
         long neededMemory = (long) w * h * bytesPerPixel;
-        final Pair<Long, Long> deviceMemory = ShellHelper.getDeviceMemory();
-        long totalDevMemory = deviceMemory.first;
-        long freeMemory = deviceMemory.second;
-        double willBeUsedMemoryCoef = (neededMemory + sAllocatedMemory) / (double) totalDevMemory;
+        if (sDeviceMemory == null) {
+            final Pair<Long, Long> deviceMemory = ShellHelper.getDeviceMemory();
+            sDeviceMemory = Double.valueOf(deviceMemory.first);
+            if (sDeviceMemory == 0) {//just in case, 1GiB should be safe
+                sDeviceMemory = (double) GiB;
+            }
+        }
+        double willBeUsedMemoryCoef = (neededMemory + sAllocatedMemory) / sDeviceMemory;
         double ratio;
-        if (totalDevMemory < 2 * GiB) {
+        if (sDeviceMemory < GiB) {
+            ratio = 0.5;
+        } else if (sDeviceMemory < 2 * GiB) {
             ratio = 0.7;
         } else {
             ratio = 0.85;
         }
 
         if (willBeUsedMemoryCoef > ratio) {
-            throw new OutOfMemoryError(String.format("Allocating needs %.2f MB, device has:%.2f MB, getting close to total device memory means that OS will most likely kill our process!", neededMemory / MiB, totalDevMemory / MiB));
+            throw new OutOfMemoryError(String.format("Allocating needs %.2f MB, device has:%.2f MB, getting close to total device memory means that OS will most likely kill our process!", neededMemory / MiB, sDeviceMemory / MiB));
         }
     }
 
