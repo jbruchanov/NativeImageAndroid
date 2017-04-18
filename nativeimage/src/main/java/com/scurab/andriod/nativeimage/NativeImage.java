@@ -201,7 +201,7 @@ public class NativeImage {
 
     private void assertRGBABitmap(Bitmap bitmap) {
         if (bitmap.getConfig() != Bitmap.Config.ARGB_8888) {
-            throw new IllegalArgumentException(String.format("Bitmap has invalid Config:%s, can be onloy ARGB_8888", bitmap.getConfig().name()));
+            throw new IllegalArgumentException(String.format("Bitmap has invalid Config:%s, only ARGB_8888 is supported", bitmap.getConfig().name()));
         }
     }
 
@@ -218,7 +218,7 @@ public class NativeImage {
     }
 
     /**
-     *
+     * Fill bitmap by specifying particular image area as source
      * @param bitmap
      * @param offsetX
      * @param offsetY
@@ -241,7 +241,7 @@ public class NativeImage {
         rotate(angle, false);
     }
     /**
-     * Rotate image about 90,180,270
+     * Rotate image about 90, 180, 270
      * @param angle
      * @param fast (valid only for 90 or 270) true is 6 - 10x faster, allocates memory of another image size though!
      */
@@ -263,6 +263,7 @@ public class NativeImage {
 
     private native int _rotate(int angle, boolean fast);
 
+    //region Called from native
     void onSetNativeRef(long ref) {
         mNativeRef = ref;
         POINTER_TRACKER.add(ref);
@@ -271,6 +272,7 @@ public class NativeImage {
     long getNativeRef() {
         return mNativeRef;
     }
+    //endregion
 
     /**
      * Apply effect use {@link EffectBuilder}
@@ -289,7 +291,7 @@ public class NativeImage {
     private native int _applyEffect(String json);
 
     /**
-     * Convert to bitmap (bitmap is acreated)
+     * Convert to bitmap (bitmap is created)
      * @return
      */
     public Bitmap asBitmap() {
@@ -321,10 +323,12 @@ public class NativeImage {
     }
 
     /**
-     * Get Image as scaled bitmap, width and height must not be higher than acutal value
+     * Get Image as scaled bitmap, width and height must not be higher than actual values
+     * 1 value of width or height can be 0 to keep aspect ratio.
      * @param width
      * @param height
      * @return
+     * @throws IllegalArgumentException if (width <= 0 && height <= 0)
      */
     public Bitmap asScaledBitmap(int width, int height) {
         if (width <= 0 && height <= 0) {
