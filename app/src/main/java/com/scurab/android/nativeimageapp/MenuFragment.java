@@ -17,7 +17,8 @@ public class MenuFragment extends Fragment {
 
     private final static Class[] FRAGMENTS = new Class<?>[]{
             EffectsFragment.class,
-            LargeImageFragment.class
+            Image100MPixFragment.class,
+            Image200MPixFragment.class
     };
 
     private LinearLayoutCompat mRoot;
