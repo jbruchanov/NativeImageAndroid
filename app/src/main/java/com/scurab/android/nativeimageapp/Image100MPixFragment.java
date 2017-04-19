@@ -15,7 +15,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.scurab.andriod.nativeimage.NativeImage;
+import com.scurab.android.nativeimage.NativeImage;
 
 /**
  * Created by JBruchanov on 15/04/2017.
