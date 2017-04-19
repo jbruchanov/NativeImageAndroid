@@ -1,4 +1,4 @@
-package com.scurab.andriod.nativeimage;
+package com.scurab.android.nativeimage;
 
 import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
