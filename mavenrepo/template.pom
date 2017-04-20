@@ -6,7 +6,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/ma
   <groupId>com.scurab</groupId>
   <artifactId>nativeimage</artifactId>
   <version>{VERSION}</version>
-  <packaging>jar</packaging>
+  <packaging>aar</packaging>
   <name>NativeImage</name>
   <url>https://github.com/jbruchanov/NativeImageAndroid</url>
   <description>NativeImageLib for Android</description>
