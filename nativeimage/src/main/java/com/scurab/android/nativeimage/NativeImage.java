@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory;
 import android.support.annotation.FloatRange;
 import android.support.annotation.IntDef;
 import android.support.annotation.IntRange;
+import android.support.annotation.Keep;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Pair;
@@ -19,6 +20,7 @@ import java.util.HashSet;
  * Created by JBruchanov on 03/04/2017.
  */
 @SuppressWarnings({"unused", "JniMissingFunction", "WeakerAccess"})
+@Keep
 public class NativeImage {
 
     @IntDef(value = {0, 90, 180, 270})
@@ -91,6 +93,7 @@ public class NativeImage {
      * Initialize C++ class
      * @param componentsPerPixel
      */
+    @Keep
     private native void _init(int componentsPerPixel);
 
     /**
@@ -118,6 +121,7 @@ public class NativeImage {
         return result;
     }
 
+    @Keep
     private native int _loadImage(String path, int processor);
 
     /**
@@ -141,6 +145,7 @@ public class NativeImage {
         return throwExceptionIfError(_saveImage(path, format.processor, params));
     }
 
+    @Keep
     private native int _saveImage(String path, int processor, String params);
 
     /**
@@ -152,6 +157,7 @@ public class NativeImage {
         return new MetaData(_getMetaData(), mBytesPerPixel);
     }
 
+    @Keep
     private native String _getMetaData();
 
     /**
@@ -164,6 +170,7 @@ public class NativeImage {
         mNativeRef = 0;
     }
 
+    @Keep
     private native void _dispose();
 
     @Override
@@ -205,6 +212,7 @@ public class NativeImage {
         }
     }
 
+    @Keep
     private native int _setPixels(Bitmap bitmap, int offsetX, int offsetY, int width, int height);
 
     /**
@@ -231,6 +239,7 @@ public class NativeImage {
         return throwExceptionIfError(_setScaledPixels(bitmap, offsetX, offsetY, width, height));
     }
 
+    @Keep
     private native int _setScaledPixels(Bitmap bitmap, int offsetX, int offsetY, int width, int height);
 
     /**
@@ -261,14 +270,17 @@ public class NativeImage {
         return NO_ERR;
     }
 
+    @Keep
     private native int _rotate(int angle, boolean fast);
 
     //region Called from native
+    @Keep
     void onSetNativeRef(long ref) {
         mNativeRef = ref;
         POINTER_TRACKER.add(ref);
     }
 
+    @Keep
     long getNativeRef() {
         return mNativeRef;
     }
@@ -288,6 +300,7 @@ public class NativeImage {
         return result;
     }
 
+    @Keep
     private native int _applyEffect(String json);
 
     /**
