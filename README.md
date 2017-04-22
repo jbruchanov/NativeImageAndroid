@@ -101,6 +101,11 @@ you are allocating more and more memory and getting closer to allocating all fre
 when you hit some critical limit **android will kill it** with no hesitation :).
 So if you really need to do this on device, **use it wisely**.
 
+### SampleApp
+http://android.scurab.com/download/NativeImageSample.apk
+
+![alt tag](http://chart.apis.google.com/chart?cht=qr&chs=200x200&chl=http://android.scurab.com/download/NativeImageSample.apk&chld=H|0)
+
 License
 -------
 
