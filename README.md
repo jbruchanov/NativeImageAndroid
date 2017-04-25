@@ -10,7 +10,7 @@ That means if your device has 2GiB memory you can load image and fill almost all
 ```
 dependencies {
     ...
-    compile 'com.scurab:nativeimage:0.3'
+    compile "com.scurab:nativeimage:0.4@aar"
 }
 
 ```
