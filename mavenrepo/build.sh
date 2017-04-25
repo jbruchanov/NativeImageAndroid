@@ -15,7 +15,7 @@ VERSION=$1
 
 echo Version:$VERSION
 
-sed -e 's/{VERSION}/'$VERSION'/g' template.pom >> nativeimage-$VERSION.pom
+sed -e 's/{VERSION}/'$VERSION'/g' template.pom > nativeimage-$VERSION.pom
 
 
 #build NativeImage
