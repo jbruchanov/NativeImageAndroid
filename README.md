@@ -3,7 +3,7 @@
 This library has been created just for fun and to learn how to work with [CrystaX NDK](https://www.crystax.net/)
 and kinda get more familiar with all native Android development.
 
-NativeImage works purely outside java heap so the memory limitation is more less just by device's memory.
+[NativeImage](https://github.com/jbruchanov/NativeImage) works purely outside java heap so the memory limitation is more less just by device's memory.
 That means if your device has 2GiB memory you can load image and fill almost all the memory (see notes below for better understanding).
 
 ## Installation
